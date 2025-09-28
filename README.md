@@ -13,7 +13,7 @@ A simple MagicMirror² module that displays the major honours of a highlighted t
 
 ## Screenshots
 
-[- ![Trophy Count](./screenshots/screenshot1.png)](https://forum.pieandbovril.com/topic/249121-the-chronicles-of-the-banter-years-2012-%E2%88%9E/)
+![Trophy Count](./screenshots/screenshot1.png)
 
 ## Installation
 
