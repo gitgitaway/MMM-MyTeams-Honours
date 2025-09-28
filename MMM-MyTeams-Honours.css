@@ -1,0 +1,75 @@
+/* MMM-MyTeams-Honours.css */
+
+.mmm-myteams-honours {
+    text-align: center;
+    padding: 10px; /* Restored to original */
+    color:  #018749;
+    transform: scale(0.8); /* Scale to 80% of original size (60% bigger than half size) */
+    transform-origin: center top; /* Keep it aligned from the top center */
+    width: 100%; /* Full width to accommodate inline trophies */
+    margin: 0 auto; /* Center the module */
+}
+
+.honours-header {
+    font-size: 1.2em; /* 60% bigger than half size (0.75em) */
+    font-weight: bold;
+    margin-bottom: 12px; /* Increased for better spacing */
+    color:  #018749;
+}
+
+.trophy-container {
+    display: flex;
+    flex-wrap: nowrap; /* Force single line */
+    justify-content: center;
+    gap: 20px; /* Increased spacing between trophies */
+    margin-bottom: 12px; /* Increased for better spacing */
+    overflow-x: auto; /* Allow horizontal scrolling if needed */
+}
+
+.trophy-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 5px; /* Restored to original */
+    min-width: 64px; /* Ensure minimum width for each trophy */
+}
+
+.trophy-count {
+    margin-top: 5px; /* Restored to original */
+    font-weight: bold;
+}
+
+.trophy-count.small {
+    font-size: 0.64em; /* 60% bigger than half size (0.4em) */
+}
+
+.trophy-count.medium {
+    font-size: 0.8em; /* 60% bigger than half size (0.5em) */
+}
+
+.trophy-count.large {
+    font-size: 0.96em; /* 60% bigger than half size (0.6em) */
+}
+
+.trophy-label {
+    margin-top: 5px; /* Restored to original */
+}
+
+.trophy-label.small {
+    font-size: 0.64em; /* 60% bigger than half size (0.4em) */
+}
+
+.trophy-label.medium {
+    font-size: 0.8em; /* 60% bigger than half size (0.5em) */
+}
+
+.trophy-label.large {
+    font-size: 0.96em; /* 60% bigger than half size (0.6em) */
+}
+
+.total-honours {
+    font-size: 0.96em; /* 60% bigger than half size (0.6em) */
+    font-weight: bold;
+    margin-top: 12px; /* Increased for better spacing */
+    color: #018749;
+}

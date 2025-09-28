@@ -1,0 +1,19 @@
+{
+  "name": "MMM-MyTeams-Honours",
+  "version": "1.0.0",
+  "description": "MagicMirror module to display team honours scraped from a website",
+  "main": "MMM-MyTeams-Honours.js",
+  "author": "gitgitaway",
+  "license": "MIT",
+  "keywords": [
+    "Sport",
+    "Soccer",
+    "Celtic",
+    "Honours",
+    "MyTeams"
+  ],
+  "dependencies": {
+    "axios": "^0.27.2",
+    "cheerio": "^1.1.2"
+  }
+}
