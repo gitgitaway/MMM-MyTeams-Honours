@@ -95,7 +95,7 @@ trophyMapping: {
 ## Troubleshooting
 - If no data appears check the web site URL you are using is correct
 - If no trophys appear check that you have the correct image in the trophyImages folder.
-- If the module shows your team have more trophys than they have actually won then you are probably a NewCo supporter 🤭 [- ![Banter Years](https://forum.pieandbovril.com/topic/249121-the-chronicles-of-the-banter-years-2012-%E2%88%9E/) 
+- If the module shows your team have more trophys than they have actually won then you are probably a NewCo supporter 🤭  ![Banter Years](https://forum.pieandbovril.com/topic/249121-the-chronicles-of-the-banter-years-2012-%E2%88%9E/) 
 - If you still have problems ensure that the debug option is set to true and check the console log for errors,
 
 ## License
