@@ -139,8 +139,6 @@ Comprehensive guides are available in the [./documentation](./documentation) fol
 - **[Troubleshooting](./documentation/Troubleshooting.md)**: Common issues and fixes.
 - **[Debug Guide](./documentation/Debug_Guide.md)**: Enabling logs and using the request manager.
 
-### 📋 Review
-- **[Module Review](./documentation/moduleReview.md)**: Systematic audit and implementation status.
 
 ## Support
 
