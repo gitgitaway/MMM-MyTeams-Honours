@@ -1,0 +1,16 @@
+{
+    "HONOURS": "Palmarès",
+    "UNABLE_TO_LOAD": "Impossible de charger les données pour",
+    "RETRYING": "Nouvelle tentative...",
+    "LOADING": "Chargement",
+    "HONOURS_DATA": "données de palmarès...",
+    "TITLES_WON": "titres remportés",
+    "TOTAL_MAJOR_HONOURS": "Total des titres majeurs",
+    "TITLES": "titres",
+    "NATIONAL_LEAGUE": "Championnat",
+    "NATIONAL_CUP": "Coupe",
+    "NATIONAL_LEAGUE_CUP": "Coupe de la Ligue",
+    "EUROPEAN_CUP": "Coupe d'Europe",
+    "UEFA_CUP": "Coupe UEFA",
+    "OTHER": "Autre"
+}

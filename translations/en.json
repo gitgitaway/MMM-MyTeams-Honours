@@ -1,0 +1,16 @@
+{
+    "HONOURS": "Honours",
+    "UNABLE_TO_LOAD": "Unable to load honours data for",
+    "RETRYING": "Retrying...",
+    "LOADING": "Loading",
+    "HONOURS_DATA": "honours data...",
+    "TITLES_WON": "titles won",
+    "TOTAL_MAJOR_HONOURS": "Total Major Honours",
+    "TITLES": "titles",
+    "NATIONAL_LEAGUE": "League",
+    "NATIONAL_CUP": "Cup",
+    "NATIONAL_LEAGUE_CUP": "League Cup",
+    "EUROPEAN_CUP": "European Cup",
+    "UEFA_CUP": "UEFA Cup",
+    "OTHER": "Other"
+}
