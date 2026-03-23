@@ -1,6 +1,6 @@
 {
   "name": "MMM-MyTeams-Honours",
-  "version": "1.0.0",
+  "version": "1.5.0",
   "description": "MagicMirror module to display team honours scraped from a website",
   "main": "MMM-MyTeams-Honours.js",
   "author": "gitgitaway",
@@ -10,10 +10,15 @@
     "Soccer",
     "Celtic",
     "Honours",
+    "Trophys",
     "MyTeams"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gitgitaway/MMM-MyTeams-Honours.git"
+  },
   "dependencies": {
-    "axios": "^0.27.2",
-    "cheerio": "^1.1.2"
+    "cheerio": "^1.1.2",
+    "node-fetch": "^2.7.0"
   }
 }

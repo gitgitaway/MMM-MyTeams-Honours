@@ -26,22 +26,17 @@ Module.register("MMM-MyTeams-Honours", {
         countSize: "medium", // size of count (small, medium, large)
         countColor: "#FFD700", // gold color for count
         labelColor: "#FFFFFF", // white color for labels
-        trophyMapping: {
-            // Keys are the 6 canonical trophy types returned by the parser.
-            // Override any of these in your config.js to use club-specific images.
-            "National League":     "scottish-league.png",
-            "National Cup":        "scottish-cup.png",
-            "National League Cup": "league-cup.png",
-            "European Cup":        "european-cup.png",
-            "UEFA Cup":            "uefa-cup.png",
-            "Other":               "trophy.png"
+        trophyMapping: { // mapping of trophy names to image files
+            "Scottish League/Premier League/Premiership": "league.png",
+            "Scottish Cup": "scottish-cup.png",
+            "Scottish League Cup": "league-cup.png",
+            "European Cup/Champions League": "european-cup.png",
+            "Other": "trophy.png"
         },
         debug: false, // enable for console logging
         accentColor: "#018749", // default club accent color (Celtic green)
         useWikidata: false, // prototype: query Wikidata SPARQL API instead of scraping
-        indicatePredecessor: false, // // use false if club never liquidated and true if you wish to claim trophys won by a predecessor club
-        cacheTTL: 5 * 60 * 1000,   // helper cache TTL in ms; set to 0 to force a fresh fetch (useful after changing teams — reset to 5 * 60 * 1000 afterwards)
-
+        
         // Theme overrides
         darkMode: null,           // null=auto, true=force dark, false=force light
         fontColorOverride: null,  // e.g., "#FFFFFF" to force white text
@@ -189,11 +184,8 @@ Module.register("MMM-MyTeams-Honours", {
                     const countDiv = document.createElement("div");
                     countDiv.className = "trophy-count " + this.config.countSize;
                     countDiv.style.color = this.config.countColor;
-                    
-                    const showAsterisk = teamData.hasShared;
-                    
-                    countDiv.textContent = "×" + teamData.honours[trophyType] + (showAsterisk ? "*" : "");
-                    countDiv.setAttribute("aria-label", teamData.honours[trophyType] + (showAsterisk ? " (includes shared or predecessor titles)" : "") + " " + this.translate("TITLES_WON"));
+                    countDiv.textContent = "×" + teamData.honours[trophyType];
+                    countDiv.setAttribute("aria-label", teamData.honours[trophyType] + " " + this.translate("TITLES_WON"));
                     trophyDiv.appendChild(countDiv);
                 }
                 
@@ -227,20 +219,19 @@ Module.register("MMM-MyTeams-Honours", {
         if (this.config.showTotal && teamData.totalHonours) {
             const totalDiv = document.createElement("div");
             totalDiv.className = "total-honours";
-            const totalAsterisk = (teamData.hasShared || teamData.hasPredecessor) ? "*" : "";
-            totalDiv.textContent = this.translate("TOTAL_MAJOR_HONOURS") + ": " + teamData.totalHonours + totalAsterisk;
+            totalDiv.textContent = this.translate("TOTAL_MAJOR_HONOURS") + ": " + teamData.totalHonours;
             wrapper.appendChild(totalDiv);
         }
 
         return wrapper;
     },
 
-    // Get trophy category for CSS styling from canonical type key
+    // Get trophy category for styling
     getTrophyCategory: function(trophyType) {
-        if (trophyType === "National League") return "league";
-        if (trophyType === "European Cup")    return "european";
-        if (trophyType === "UEFA Cup")        return "european";
-        if (trophyType === "National Cup" || trophyType === "National League Cup") return "cup";
+        const type = trophyType.toLowerCase();
+        if (type.includes("league") || type.includes("premiership")) return "league";
+        if (type.includes("european cup") || type.includes("champions league")) return "european";
+        if (type.includes("cup")) return "cup";
         return "other";
     },
 
@@ -268,17 +259,20 @@ Module.register("MMM-MyTeams-Honours", {
         return this.config.trophyMapping["Other"];
     },
     
-    // Get translated display label from the canonical trophy type key
+    // Get shortened trophy name for display
     getShortTrophyName: function(trophyType) {
-        const labels = {
-            "National League":     this.translate("NATIONAL_LEAGUE"),
-            "National Cup":        this.translate("NATIONAL_CUP"),
-            "National League Cup": this.translate("NATIONAL_LEAGUE_CUP"),
-            "European Cup":        this.translate("EUROPEAN_CUP"),
-            "UEFA Cup":            this.translate("UEFA_CUP"),
-            "Other":               this.translate("OTHER")
-        };
-        return labels[trophyType] || trophyType;
+        // Shorten long trophy names for display
+        // Check for League Cup FIRST before checking for Scottish League (order matters!)
+        if (trophyType.includes("League Cup") || trophyType.includes("Scottish League Cup")) {
+            return this.translate("LEAGUE_CUP");
+        } else if (trophyType.includes("Scottish League") || trophyType.includes("Premier League")) {
+            return this.translate("LEAGUE");
+        } else if (trophyType.includes("Scottish Cup")) {
+            return this.translate("SCOTTISH_CUP");
+        } else if (trophyType.includes("European Cup") || trophyType.includes("Champions League")) {
+            return this.translate("EUROPEAN_CUP");
+        }
+        return trophyType;
     },
 
     // Schedule next update
@@ -329,9 +323,7 @@ Module.register("MMM-MyTeams-Honours", {
                 team: teamEntry.team,
                 debug: this.config.debug,
                 useWikidata: this.config.useWikidata,
-                showLastWon: this.config.showLastWon,
-                indicatePredecessor: teamEntry.indicatePredecessor !== undefined ? teamEntry.indicatePredecessor : this.config.indicatePredecessor,
-                cacheTTL: this.config.cacheTTL
+                showLastWon: this.config.showLastWon
             });
         });
     },
@@ -353,8 +345,6 @@ Module.register("MMM-MyTeams-Honours", {
                 honours: payload.honours,
                 totalHonours: payload.totalHonours,
                 lastWonYears: payload.lastWonYears || {},
-                hasShared: payload.hasShared || false,
-                hasPredecessor: payload.hasPredecessor || false,
                 loaded: true
             };
             this.error = null;

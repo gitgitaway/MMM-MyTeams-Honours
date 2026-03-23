@@ -36,22 +36,20 @@ module.exports = NodeHelper.create({
                 requestManager.enableDebug();
             }
             
-            const cacheTTL = (payload.cacheTTL !== undefined) ? payload.cacheTTL : 5 * 60 * 1000;
             if (payload.useWikidata) {
-                this.fetchWikidataHonours(payload.scrapeUrl, payload.team, cacheTTL, payload.indicatePredecessor);
+                this.fetchWikidataHonours(payload.scrapeUrl, payload.team);
             } else {
-                this.fetchHonours(payload.scrapeUrl, payload.team, payload.indicatePredecessor, cacheTTL);
+                this.fetchHonours(payload.scrapeUrl, payload.team);
             }
         }
     },
 
     // Fetch honours data from Wikidata
-    fetchWikidataHonours: function(url, team, cacheTTL, indicatePredecessor) {
+    fetchWikidataHonours: function(url, team) {
         // CACHE-001: Check cache first
         const now = Date.now();
-        const cacheKey = url + (indicatePredecessor ? "_wikidata_pre" : "_wikidata_no");
-        const cached = this.cache[cacheKey];
-        const maxAge = cacheTTL;
+        const cached = this.cache[url + "_wikidata"];
+        const maxAge = 23 * 60 * 60 * 1000; // 23 hours
 
         if (cached && (now - cached.timestamp < maxAge)) {
             if (this.debug) Log.info(`${this.name}: Serving cached Wikidata for ${team}`);
@@ -59,9 +57,7 @@ module.exports = NodeHelper.create({
                 team: team,
                 honours: cached.data.honours,
                 totalHonours: cached.data.totalHonours,
-                lastWonYears: cached.data.lastWonYears || {},
-                hasShared: cached.data.hasShared || false,
-                hasPredecessor: cached.data.hasPredecessor || false
+                lastWonYears: cached.data.lastWonYears || {}
             });
             return;
         }
@@ -75,7 +71,7 @@ module.exports = NodeHelper.create({
             pageTitle = pathParts[pathParts.length - 1];
         } catch (e) {
             Log.error(`${this.name}: Failed to extract page title from URL: ${url}`);
-            this.fetchHonours(url, team, indicatePredecessor, cacheTTL);
+            this.fetchHonours(url, team); // Fallback to scraping
             return;
         }
 
@@ -155,8 +151,6 @@ module.exports = NodeHelper.create({
                     mappedType = "Scottish League Cup";
                 } else if (label.includes("european cup") || label.includes("uefa champions league")) {
                     mappedType = "European Cup/Champions League";
-                } else if (label.includes("uefa cup") || label.includes("uefa europa league")) {
-                    mappedType = "UEFA Cup/ Europa League";    
                 }
 
                 if (mappedType) {
@@ -175,27 +169,15 @@ module.exports = NodeHelper.create({
                 "Scottish League/Premier League/Premiership",
                 "Scottish Cup",
                 "Scottish League Cup",
-                "European Cup/Champions League",
-                "UEFA Cup/ Europa League"
+                "European Cup/Champions League"
             ];
             trophyTypes.forEach(type => { if (!honours[type]) honours[type] = 0; });
 
-            let hasPredecessor = false;
-            if (team.toLowerCase().includes("rangers")) {
-                if (indicatePredecessor === false) {
-                    totalHonours = Math.max(0, totalHonours - 115);
-                } else {
-                    hasPredecessor = true;
-                }
-            }
-
-            this.cache[cacheKey] = {
+            this.cache[url + "_wikidata"] = {
                 data: {
                     honours: honours,
                     totalHonours: totalHonours,
-                    lastWonYears: lastWonYears,
-                    hasShared: false,
-                    hasPredecessor: hasPredecessor
+                    lastWonYears: lastWonYears
                 },
                 timestamp: now
             };
@@ -205,19 +187,17 @@ module.exports = NodeHelper.create({
                 team: team,
                 honours: honours,
                 totalHonours: totalHonours,
-                lastWonYears: lastWonYears,
-                hasShared: false,
-                hasPredecessor: hasPredecessor
+                lastWonYears: lastWonYears
             });
         })
         .catch(error => {
             Log.warn(`${this.name}: Wikidata fetch failed for ${team}, falling back to scraping: ${error.message}`);
-            this.fetchHonours(url, team, indicatePredecessor, cacheTTL);
+            this.fetchHonours(url, team);
         });
     },
 
     // Fetch honours data from the specified URL
-    fetchHonours: function(url, team, indicatePredecessor, cacheTTL) {
+    fetchHonours: function(url, team) {
         // SEC-003: URL Allowlist
         const ALLOWED_HOSTNAMES = ["en.wikipedia.org", "www.wikipedia.org", "query.wikidata.org"];
         try {
@@ -239,9 +219,8 @@ module.exports = NodeHelper.create({
 
         // CACHE-001: In-memory cache
         const now = Date.now();
-        const cacheKey = url + (indicatePredecessor ? "_pre" : "_no");
-        const cached = this.cache[cacheKey];
-        const maxAge = cacheTTL;
+        const cached = this.cache[url];
+        const maxAge = 23 * 60 * 60 * 1000; // 23 hours
 
         if (cached && (now - cached.timestamp < maxAge)) {
             if (this.debug) Log.info(`${this.name}: Serving cached data for ${team}`);
@@ -249,8 +228,7 @@ module.exports = NodeHelper.create({
                 team: team,
                 honours: cached.data.honours,
                 totalHonours: cached.data.totalHonours,
-                lastWonYears: cached.data.lastWonYears || {},
-                hasShared: cached.data.hasShared || false
+                lastWonYears: cached.data.lastWonYears || {}
             });
             return;
         }
@@ -288,15 +266,13 @@ module.exports = NodeHelper.create({
                     team: team,
                     honours: cached.data.honours,
                     totalHonours: cached.data.totalHonours,
-                    lastWonYears: cached.data.lastWonYears || {},
-                    hasShared: cached.data.hasShared || false,
-                    hasPredecessor: cached.data.hasPredecessor || false
+                    lastWonYears: cached.data.lastWonYears || {}
                 });
                 return;
             }
 
             if (result.success) {
-                const honours = this.parseHonoursData(result.data, team, indicatePredecessor);
+                const honours = this.parseHonoursData(result.data, team);
                 
                 if (honours.error) {
                     this.sendSocketNotification("HONOURS_RESULT", {
@@ -305,7 +281,7 @@ module.exports = NodeHelper.create({
                     });
                 } else {
                     // Update cache
-                    this.cache[cacheKey] = {
+                    this.cache[url] = {
                         data: honours,
                         timestamp: now,
                         etag: result.headers ? result.headers.etag : null,
@@ -316,9 +292,7 @@ module.exports = NodeHelper.create({
                         team: team,
                         honours: honours.honours,
                         totalHonours: honours.totalHonours,
-                        lastWonYears: honours.lastWonYears || {},
-                        hasShared: honours.hasShared || false,
-                        hasPredecessor: honours.hasPredecessor || false
+                        lastWonYears: honours.lastWonYears || {}
                     });
                 }
             } else {
@@ -337,75 +311,30 @@ module.exports = NodeHelper.create({
     },
 
     // Parse the HTML to extract honours data
-    parseHonoursData: function(html, team, indicatePredecessor) {
+    parseHonoursData: function(html, team) {
         try {
             const $ = cheerio.load(html);
             const honours = {};
             let totalHonours = 0;
             const lastWonYears = {};
-            let hasShared = false;
             
-            // Helper: process one wikitable row into honours/lastWonYears.
-            // Wikipedia honours tables often have a leading "Type" column (Domestic / Continental)
-            // that uses rowspan.  Rows that start the rowspan have 4 cells:
-            //   [Type, Competition, Titles, Seasons]
-            // Rows that fall *under* the rowspan (e.g. Scottish Cup, League Cup) only have 3:
-            //   [Competition, Titles, Seasons]
-            // We detect the 4-column layout by checking whether cells[0] maps to a known
-            // trophy type — if it doesn't, we shift the indices.
+            // Helper: process one wikitable row into honours/lastWonYears
             const processRow = (row) => {
                 const $row = $(row);
                 if ($row.find('td').length === 0) return; // skip header-only rows
                 const cells = $row.find('td, th');
                 if (cells.length < 2) return;
-
-                // Determine correct column offset
-                let compIdx = 0, countIdx = 1, seasonsIdx = 2;
-                if (cells.length >= 4) {
-                    const cell0 = $(cells[0]).text().trim();
-                    // If the first cell doesn't map to a trophy type, it's the "Type" category column
-                    if (!this.mapCompetitionToTrophyType(cell0)) {
-                        compIdx = 1; countIdx = 2; seasonsIdx = 3;
-                    }
-                }
-
-                const competition = $(cells[compIdx]).text().trim();
-                const countText   = $(cells[countIdx]).text().trim();
-                const seasonsText = cells.length > seasonsIdx ? $(cells[seasonsIdx]).text().trim() : "";
-                
-                // Skip Runners-up, Finalists, and other non-winner rows.
-                // Wikipedia sometimes lists them in the same table.
-                const lowerComp = competition.toLowerCase();
-                if (lowerComp.includes("runner") || lowerComp.includes("finalist") ||
-                    lowerComp.includes("second") || lowerComp.includes("third") ||
-                    lowerComp.includes("fourth")) {
-                    return;
-                }
-
+                const competition = $(cells[0]).text().trim();
+                const countText   = $(cells[1]).text().trim();
+                const seasonsText = cells.length >= 3 ? $(cells[2]).text().trim() : "";
                 const count = this.extractNumber(countText);
                 if (count > 0) {
                     const mappedType = this.mapCompetitionToTrophyType(competition);
-                    if (mappedType) {
-                        let effectiveCount = count;
-
-                        if (effectiveCount > 0) {
-                            if (countText.toLowerCase().includes("shared") || seasonsText.toLowerCase().includes("shared")) {
-                                Log.warn(`${this.name}: [DIAG] hasShared set TRUE — comp="${competition}" count="${countText}" seasons="${seasonsText.substring(0,80)}"`);
-                                hasShared = true;
-                            }
-                            honours[mappedType] = (honours[mappedType] || 0) + effectiveCount;
-                            totalHonours += effectiveCount;
-                            
-                            // Extract the latest season
-                            const latestSeason = this._extractLatestSeason(seasonsText || countText);
-                            if (latestSeason) {
-                                const effectiveYear = this._getEffectiveYear(latestSeason);
-                                const currentBestYear = lastWonYears[mappedType] ? this._getEffectiveYear(lastWonYears[mappedType]) : 0;
-                                if (effectiveYear >= currentBestYear) {
-                                    lastWonYears[mappedType] = latestSeason;
-                                }
-                            }
-                        }
+                    if (mappedType && !honours[mappedType]) {
+                        honours[mappedType] = count;
+                        totalHonours += count;
+                        const years = (seasonsText + " " + countText).match(/\b(19|20)\d{2}\b/g);
+                        if (years) lastWonYears[mappedType] = Math.max(...years.map(y => parseInt(y)));
                     }
                 }
             };
@@ -414,8 +343,7 @@ module.exports = NodeHelper.create({
             // Wikipedia wraps headings in <div class="mw-heading mw-heading2"> in modern markup.
             const isMajorSection = ($el) => {
                 if ($el.is('h2')) return true;
-                if ($el.hasClass('mw-heading') && $el.hasClass('mw-heading2')) return true;
-                if ($el.find('h2').length > 0) return true;
+                if ($el.hasClass('mw-heading') && ($el.hasClass('mw-heading2') || !$el.hasClass('mw-heading3'))) return true;
                 return false;
             };
 
@@ -449,8 +377,7 @@ module.exports = NodeHelper.create({
                 $('table.wikitable').each((i, table) => {
                     const firstTh = $(table).find('tr th').first().text().toLowerCase();
                     if (firstTh.includes('competition') || firstTh.includes('league') ||
-                        firstTh.includes('cup') || firstTh.includes('honours') ||
-                        firstTh === 'type') {
+                        firstTh.includes('cup') || firstTh.includes('honours')) {
                         $(table).find('tr').each((j, row) => processRow(row));
                     }
                 });
@@ -486,166 +413,79 @@ module.exports = NodeHelper.create({
                     $(listItems).each((j, item) => {
                         const text = $(item).text().trim();
                         if (!text) return;
-                        
-                        // Skip Runners-up etc. in list
-                        const lowerText = text.toLowerCase();
-                        if (lowerText.includes("runner") || lowerText.includes("finalist") ||
-                            lowerText.includes("second") || lowerText.includes("third")) {
-                            return;
-                        }
-
                         const count = this.extractNumber(text);
                         const mappedType = this.mapCompetitionToTrophyType(text);
-                        if (mappedType) {
+                        if (mappedType && !honours[mappedType]) {
                             const finalCount = (count === 0 && (text.includes('European Cup') || text.includes('Champions League'))) ? 1 : count;
-                            
-                            let effectiveCount = finalCount;
-
-                            if (effectiveCount > 0) {
-                                if (text.toLowerCase().includes("shared")) {
-                                    Log.warn(`${this.name}: [DIAG] hasShared set TRUE (list fallback) — text="${text.substring(0,100)}"`);
-                                    hasShared = true;
-                                }
-                                honours[mappedType] = (honours[mappedType] || 0) + effectiveCount;
-                                totalHonours += effectiveCount;
-                                
-                                const latestSeason = this._extractLatestSeason(text);
-                                if (latestSeason) {
-                                    const effectiveYear = this._getEffectiveYear(latestSeason);
-                                    const currentBestYear = lastWonYears[mappedType] ? this._getEffectiveYear(lastWonYears[mappedType]) : 0;
-                                    if (effectiveYear >= currentBestYear) {
-                                        lastWonYears[mappedType] = latestSeason;
-                                    }
-                                }
+                            if (finalCount > 0) {
+                                honours[mappedType] = finalCount;
+                                totalHonours += finalCount;
+                                const years = text.match(/\b(19|20)\d{2}\b/g);
+                                if (years) lastWonYears[mappedType] = Math.max(...years.map(y => parseInt(y)));
                             }
                         }
                     });
                 });
             }
             
-            //OBSFUSCATED-Banter Years
-            const _0xc27248=_0x21ff;function _0xdfbd(){const _0xda279a=['rangers','24504hXcUxh','1834cKOTsi','149457EjILel','9160akxueK','88rfAgJg','max','9PmNYeE','3621012lnJfwJ','includes','58MsvBra','5995870pSMmrW','1556CMgIQE','3581652vbRtLy','1499621uBCXqR'];
-                _0xdfbd=function(){return _0xda279a;};return _0xdfbd();}(function(_0x3a7ae1,_0x518375){const _0x54a4f3=_0x21ff,_0x58aa2d=_0x3a7ae1();
-                while(!![]){try{const _0x3aadf4=parseInt(_0x54a4f3(0xe9))/0x1+-parseInt(_0x54a4f3(0xf4))/0x2*(parseInt(_0x54a4f3(0xed))/0x3)+parseInt(_0x54a4f3(0xe7))/0x4*(-parseInt(_0x54a4f3(0xee))/0x5)+parseInt(_0x54a4f3(0xe8))/0x6+parseInt(_0x54a4f3(0xec))/0x7*(-parseInt(_0x54a4f3(0xeb))/0x8)+parseInt(_0x54a4f3(0xf1))/0x9*(-parseInt(_0x54a4f3(0xf5))/0xa)+parseInt(_0x54a4f3(0xef))/0xb*(parseInt(_0x54a4f3(0xf2))/0xc);if(_0x3aadf4===_0x518375)break;else _0x58aa2d['push'](_0x58aa2d['shift']());}catch(_0x4df3e2){_0x58aa2d['push'](_0x58aa2d['shift']());}}}(_0xdfbd,0xe8327));let hasPredecessor=![];function _0x21ff(_0x9e5910,_0x25e001){_0x9e5910=_0x9e5910-0xe7;const _0xdfbd0c=_0xdfbd();let _0x21ff75=_0xdfbd0c[_0x9e5910];return _0x21ff75;}team['toLowerCase']()[_0xc27248(0xf3)](_0xc27248(0xea))&&(indicatePredecessor===![]?totalHonours=Math[_0xc27248(0xf0)](0x0,totalHonours-0x73):hasPredecessor=!![]);Log.warn(`${this.name}: [DIAG] parseHonoursData result — team="${team}" hasShared=${hasShared} hasPredecessor=${hasPredecessor} totalHonours=${totalHonours}`);return{'honours':honours,'totalHonours':totalHonours,'lastWonYears':lastWonYears,'hasShared':hasShared,'hasPredecessor':hasPredecessor};
-            //
-            } catch (error) {
+            // Ensure we have values for all trophy types
+            const trophyTypes = [
+                "Scottish League/Premier League/Premiership",
+                "Scottish Cup",
+                "Scottish League Cup",
+                "European Cup/Champions League"
+            ];
+            
+            trophyTypes.forEach(type => { if (!honours[type]) honours[type] = 0; });
+            
+            return {
+                honours: honours,
+                totalHonours: totalHonours,
+                lastWonYears: lastWonYears
+            };
+        } catch (error) {
             Log.error(`${this.name}: Error parsing honours data: ${error.message}`);
             return { error: `Error parsing data: ${error.message}` };
-            }
-    },
-
-
-    // Helper to extract the most recent season string (e.g., "1966-67") from text
-    _extractLatestSeason: function(text) {
-        if (!text) return null;
-        // Find all sequences that look like seasons or years
-        // - "1966-67" or "1966-67" (4 digits, dash/en-dash, 2 digits)
-        // - "1966/67"
-        // - "1966"
-        const seasonRegex = /\b(19|20)\d{2}(?:[–\-/]\d{2})?\b/g;
-        const matches = text.match(seasonRegex);
-        if (!matches) return null;
-        
-        // Return the last one in the list (most recent)
-        // and normalize dashes
-        return matches[matches.length - 1].replace(/[–—]/g, '-');
-    },
-
-    // Helper to get a numeric value for a season for comparison
-    // "1966-67" -> 1967, "1970" -> 1970
-    _getEffectiveYear: function(seasonStr) {
-        if (!seasonStr) return 0;
-        const parts = seasonStr.split('-');
-        if (parts.length === 2) {
-            const startYear = parseInt(parts[0]);
-            const endDigits = parseInt(parts[1]);
-            // If endDigits is like "67", it's usually same century as startYear
-            // If start is 1999 and end is 00, endYear is 2000
-            let endYear = Math.floor(startYear / 100) * 100 + endDigits;
-            if (endYear < startYear) endYear += 100;
-            return endYear;
         }
-        return parseInt(seasonStr) || 0;
     },
 
-    // Universal competition → canonical trophy type mapper.
-    // Returns one of 6 canonical keys used as keys in trophyMapping:
-    //   "National League Cup" | "European Cup" | "UEFA Cup" |
-    //   "National Cup"        | "National League" | "Other"
-    //
-    // Works for any club worldwide — not tied to Scotland or England.
+    // Helper to map competition names to standard types
     mapCompetitionToTrophyType: function(text) {
-        const t = text.toLowerCase().trim();
-        if (!t) return null;
-
-        // ── 1. National League Cup ────────────────────────────────────────────────
-        // Must be checked BEFORE "National League" to avoid "league" false-matches.
-        const leagueCupTerms = [
-            "league cup", "efl cup", "carabao cup", "carling cup",
-            "coca-cola cup", "worthington cup", "littlewoods cup",
-            "milk cup", "rumbelows cup",
-            "cis cup", "bell's cup", "skol cup", "drybrough cup",   // Scottish
-            "coupe de la ligue",                                      // France
-            "coppa italia" // (sometimes listed as league cup equivalent)
-        ];
-        if (leagueCupTerms.some(kw => t.includes(kw))) return "National League Cup";
-
-        // ── 2. European Cup / Champions League ────────────────────────────────────
-        if ((t.includes("european cup") && !t.includes("cup winners")) ||
-            t.includes("champions league") ||
-            t.includes("european champion clubs")) {
-            return "European Cup";
+        const t = text.toLowerCase();
+        
+        // League Cup must be checked BEFORE generic "league" to avoid false matches
+        if (t.includes("league cup") || t.includes("coca-cola cup") || t.includes("cis cup") ||
+            t.includes("bell's cup") || t.includes("drybrough cup") || t.includes("skol cup") ||
+            t.includes("league cup")) {
+            return "Scottish League Cup";
         }
 
-        // ── 3. UEFA Cup / Europa League / Cup Winners' Cup ────────────────────────
-        const uefaCupTerms = [
-            "uefa cup", "europa league", "cup winners", "european cup winners' cup",
-            "fairs cup", "inter-cities fairs"
-        ];
-        if (uefaCupTerms.some(kw => t.includes(kw))) return "UEFA Cup";
-
-        // ── 4. National Cup ───────────────────────────────────────────────────────
-        // Explicit named cups first
-        const nationalCupTerms = [
-            "fa cup", "scottish cup", "copa del rey", "dfb-pokal",
-            "coupe de france", "coppa italia", "knvb cup",
-            "fai cup", "fa ireland cup", "national cup",
-            "fa trophy", "fr cup"
-        ];
-        if (nationalCupTerms.some(kw => t.includes(kw))) return "National Cup";
-
-        // Generic: anything with "cup" that is NOT a League Cup, European comp,
-        // Super Cup, Charity/Community Shield, or Continental Shield
-        if (t.includes("cup") &&
-            !t.includes("league cup") &&
-            !t.includes("european") && !t.includes("champions") &&
-            !t.includes("super cup") && !t.includes("supercup") &&
-            !t.includes("charity") && !t.includes("shield") &&
-            !t.includes("continental") && !t.includes("intercontinental")) {
-            return "National Cup";
+        // European Cup / Champions League
+        if (t.includes("european cup") || t.includes("champions league") ||
+            t.includes("uefa champions league") || t.includes("european champion clubs")) {
+            return "European Cup/Champions League";
         }
 
-        // ── 5. National League ────────────────────────────────────────────────────
-        // Explicit well-known league names
-        const leagueTerms = [
-            // British
-            "premier league", "premiership", "first division", "second division",
-            "football league", "football championship",
-            "scottish football league", "scottish premiership",
-            "scottish premier league", "scottish premier division",
-            "scottish first division", "scottish league championship",
-            // Continental Europe
-            "bundesliga", "la liga", "primera division", "primera liga",
-            "serie a", "ligue 1", "eredivisie", "primeira liga",
-            "pro league", "jupiler", "super lig", "allsvenskan",
-            "eliteserien", "ekstraklasa", "superliga", "süper lig",
-            "segunda division", "2. bundesliga"
-        ];
-        if (leagueTerms.some(kw => t.includes(kw))) return "National League";
+        // Scottish Cup (national knockout cup — must be checked before generic league check)
+        if (t.includes("scottish cup") || t.includes("scottish fa cup")) {
+            return "Scottish Cup";
+        }
+        // Catch "fa cup" variants where "scottish" might be absent in some table headings
+        if (t.includes("cup") && t.includes("scottish") &&
+            !t.includes("league cup") && !t.includes("challenge") && !t.includes("charity")) {
+            return "Scottish Cup";
+        }
 
-        // Generic catch-all: any remaining "league", "division", or "championship"
-        if (t.includes("league") || t.includes("division") || t.includes("championship")) {
-            return "National League";
+        // Scottish League / Premiership
+        if (t.includes("scottish football league") || t.includes("scottish premiership") ||
+            t.includes("scottish premier league") || t.includes("scottish premier division") ||
+            t.includes("scottish first division") || t.includes("scottish league championship")) {
+            return "Scottish League/Premier League/Premiership";
+        }
+        // Broader league catch: any "league"/"premiership" with a Scottish indicator
+        if ((t.includes("league") || t.includes("premiership")) &&
+            (t.includes("scottish") || t.includes("scotland"))) {
+            return "Scottish League/Premier League/Premiership";
         }
 
         return null;
@@ -671,19 +511,11 @@ module.exports = NodeHelper.create({
         const timesMatch = text.match(/(\d+)\s*(times|titles|wins|championships)/i);
         if (timesMatch) return parseInt(timesMatch[1]);
         
-        // 4. Find all digit sequences (no word-boundary restriction so "55s" → 55,
-        //    handling Wikipedia's superscript record-sharing markers like "55s" or "1*")
-        const allNumbers = text.match(/\d+/g);
+        // 4. Just find the first number that isn't a year
+        const allNumbers = text.match(/\b\d+\b/g);
         if (allNumbers) {
-            // Check for season ranges like "1966-67" or "1966/67" to avoid picking up the "67"
-            const rangeMatch = text.match(/\b(19|20)\d{2}[–\-/](\d{2,4})\b/);
-            
             for (let num of allNumbers) {
                 const n = parseInt(num);
-                // If this number is the start or end of a season range we found, skip it
-                if (rangeMatch && (num === rangeMatch[1] || num === rangeMatch[2])) {
-                    continue;
-                }
                 // Assume if it's > 1800 and < 2100 it might be a year
                 if (n < 1800 || n > 2100) return n;
             }

@@ -1,75 +1,95 @@
 /* MMM-MyTeams-Honours.css */
 
 .mmm-myteams-honours {
+    /* Color Tokens (INN-004) */
+    --honours-accent: #018749;
+    --honours-text: #ffffff;
+    --honours-count: #FFD700;
+    --honours-dimmed: #aaaaaa;
+    
+    /* Category Tints (DES-003) */
+    --tint-league: rgba(0, 100, 200, 0.08);
+    --tint-cup: rgba(200, 150, 0, 0.08);
+    --tint-european: rgba(0, 0, 160, 0.08);
+    --tint-other: rgba(1, 135, 73, 0.1);
+
     text-align: center;
-    padding: 10px; /* Restored to original */
-    color:  #018749;
-    transform: scale(0.8); /* Scale to 80% of original size (60% bigger than half size) */
-    transform-origin: center top; /* Keep it aligned from the top center */
-    width: 100%; /* Full width to accommodate inline trophies */
-    margin: 0 auto; /* Center the module */
+    padding: 8px;
+    color: var(--honours-accent);
+    font-size: 0.8em; /* Base scaling for the entire module */
+    width: 100%;
 }
 
 .honours-header {
-    font-size: 1.2em; /* 60% bigger than half size (0.75em) */
+    font-size: 1.5em; /* Prominent heading */
     font-weight: bold;
-    margin-bottom: 12px; /* Increased for better spacing */
-    color:  #018749;
+    margin-bottom: 12px;
+    color: var(--honours-accent);
 }
 
 .trophy-container {
     display: flex;
-    flex-wrap: nowrap; /* Force single line */
+    flex-wrap: wrap; /* Graceful wrapping on small displays (UX-004) */
     justify-content: center;
-    gap: 20px; /* Increased spacing between trophies */
-    margin-bottom: 12px; /* Increased for better spacing */
-    overflow-x: auto; /* Allow horizontal scrolling if needed */
+    gap: 16px;
+    margin-bottom: 12px;
 }
 
 .trophy-item {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin: 5px; /* Restored to original */
-    min-width: 64px; /* Ensure minimum width for each trophy */
+    margin: 5px;
+    min-width: 64px;
 }
 
 .trophy-count {
-    margin-top: 5px; /* Restored to original */
+    margin-top: 5px;
     font-weight: bold;
+    color: var(--honours-count);
 }
 
-.trophy-count.small {
-    font-size: 0.64em; /* 60% bigger than half size (0.4em) */
-}
-
-.trophy-count.medium {
-    font-size: 0.8em; /* 60% bigger than half size (0.5em) */
-}
-
-.trophy-count.large {
-    font-size: 0.96em; /* 60% bigger than half size (0.6em) */
-}
+/* Count font sizes (DES-002: Intent-driven comments) */
+.trophy-count.small { font-size: 0.8em; }  /* Compact for tight layouts */
+.trophy-count.medium { font-size: 1.0em; } /* Default readable size */
+.trophy-count.large { font-size: 1.2em; }  /* Large for visibility */
 
 .trophy-label {
-    margin-top: 5px; /* Restored to original */
+    margin-top: 5px;
 }
 
-.trophy-label.small {
-    font-size: 0.64em; /* 60% bigger than half size (0.4em) */
-}
-
-.trophy-label.medium {
-    font-size: 0.8em; /* 60% bigger than half size (0.5em) */
-}
-
-.trophy-label.large {
-    font-size: 0.96em; /* 60% bigger than half size (0.6em) */
-}
+/* Label font sizes (DES-002: Intent-driven comments) */
+.trophy-label.small { font-size: 0.8em; }  /* Secondary information */
+.trophy-label.medium { font-size: 1.0em; } 
+.trophy-label.large { font-size: 1.2em; }
 
 .total-honours {
-    font-size: 0.96em; /* 60% bigger than half size (0.6em) */
+    font-size: 1.2em;
     font-weight: bold;
-    margin-top: 12px; /* Increased for better spacing */
-    color: #018749;
+    margin-top: 12px;
+    color: var(--honours-accent);
+}
+
+/* Trophy background category tints (DES-003) */
+.trophy-item img {
+    background-color: var(--tint-other);
+    border-radius: 8px;
+    padding: 4px;
+}
+
+.trophy-item[data-category="league"] img   { background-color: var(--tint-league); }
+.trophy-item[data-category="cup"] img      { background-color: var(--tint-cup); }
+.trophy-item[data-category="european"] img { background-color: var(--tint-european); }
+
+/* Screen reader only utility (A11Y-001/003) */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
