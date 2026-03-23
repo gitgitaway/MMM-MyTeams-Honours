@@ -5,7 +5,7 @@ A universal MagicMirror² module that displays the major honours of any football
 ## Screenshots
 
 ![Celtic FC ](./screenshots/screenshot1.png)
-![Liverpool FC](./screenshots/screenshot1.png)
+![Liverpool FC](./screenshots/screenshot2.png)
 
 ## Features
 
